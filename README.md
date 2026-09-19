@@ -65,3 +65,9 @@ python validate_edefter_xml.py berat.xml --json
 ## ⚖️ Lisans
 
 Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır.
+
+
+### 📚 İlgili Rehber ve Çözümler
+* 📄 [e-Defter Berat Yükleme Gününde Mali Mühür Çalışmazsa Ne Yapılır?](https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html)
+* 📄 [Mali Mühür ile Bireysel E-İmza Arasındaki 3 Temel Fark](https://mali-muhur-merkezi.pages.dev/yazilar/mali-muhur-ve-e-imza-arasindaki-farklar.html)
+* 📄 [e-Fatura ile e-Arşiv Fatura Arasındaki Fark Nedir?](https://efatura-atolyesi.pages.dev/yazilar/e-fatura-ve-e-arsiv-arasindaki-farklar.html)

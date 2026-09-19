@@ -8,7 +8,7 @@ Yevmiye, Defter-i Kebir ve Berat XML dosyalarını yükleme öncesinde denetler:
 Zorunlu alanları, VKN/TCKN, dönem formatını ve en önemlisi Borç-Alacak
 tutar eşitliğini (Balans kontrolü) inceler.
 
-Yazar: E-İmza & Dijital Dönüşüm Portalı (https://eimza-kep.github.io/eimza-blog/)
+Yazar: E-İmza & Dijital Dönüşüm Portalı (https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html)
 Lisans: MIT
 """
 
@@ -156,7 +156,7 @@ def main():
         print()
 
     print("=" * 80)
-    print("Mali Mühür & e-Defter Çözüm Portalı: https://eimza-kep.github.io/eimza-blog/")
+    print("Mali Mühür & e-Defter Çözüm Portalı: https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html")
 
 if __name__ == "__main__":
     main()
