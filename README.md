@@ -60,6 +60,20 @@ Borç/Alacak Fark: 0.00 TL (✅ DENGELİ (0.00 TL))
 python validate_edefter_xml.py berat.xml --json
 ```
 
+### Toplu XML Taraması (Klasör Modu)
+Bir klasördeki tüm Yevmiye, Kebir ve Berat dosyalarını tek seferde taramak için:
+```bash
+# Klasördeki tüm XML dosyalarını denetle
+python validate_edefter_xml.py --dir ./edefter_arsiv/
+
+# Raporu JSON dosyasına kaydet
+python validate_edefter_xml.py --dir ./edefter_arsiv/ --output berat_raporu.json
+
+# Hatalı/dengesiz berat varsa CI/CD veya script'te hata kodu (exit 1) üret
+python validate_edefter_xml.py berat.xml --strict
+```
+
+
 ---
 
 ## ⚖️ Lisans
