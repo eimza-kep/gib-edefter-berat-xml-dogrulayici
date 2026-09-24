@@ -1,6 +1,7 @@
 # GİB e-Defter & Berat XML Doğrulama Aracı 📑⚖️
 
-[![Lisans: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python CI](https://github.com/eimza-kep/gib-edefter-berat-xml-dogrulayici/actions/workflows/ci.yml/badge.svg)](https://github.com/eimza-kep/gib-edefter-berat-xml-dogrulayici/actions)
+[![Lisans: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
 [![Standart: GİB e-Defter](https://img.shields.io/badge/Standart-G%C4%B0B%20e--Defter%20XSD-red.svg)](https://edefter.gov.tr)
 

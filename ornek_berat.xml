@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edefter:berat xmlns:edefter="http://www.edefter.gov.tr" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+  <edefter:defter>
+    <edefter:identifier schemeID="VKN">1234567890</edefter:identifier>
+    <edefter:period>2026-01</edefter:period>
+    <edefter:type>Yevmiye</edefter:type>
+    <edefter:checksum algorithm="SHA-256">a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456</edefter:checksum>
+  </edefter:defter>
+  <ds:Signature>
+    <ds:SignedInfo>
+      <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+    </ds:SignedInfo>
+    <ds:SignatureValue>dummySignatureValue==</ds:SignatureValue>
+  </ds:Signature>
+</edefter:berat>
