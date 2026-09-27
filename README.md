@@ -1,88 +1,81 @@
-# GİB e-Defter & Berat XML Doğrulama Aracı 📑⚖️
+# GİB e-Defter ve Berat XML Doğrulayıcı 📊🛡️
 
 [![Python CI](https://github.com/eimza-kep/gib-edefter-berat-xml-dogrulayici/actions/workflows/ci.yml/badge.svg)](https://github.com/eimza-kep/gib-edefter-berat-xml-dogrulayici/actions)
 [![Lisans: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
-[![Standart: GİB e-Defter](https://img.shields.io/badge/Standart-G%C4%B0B%20e--Defter%20XSD-red.svg)](https://edefter.gov.tr)
+[![Standart: GİB e-Defter](https://img.shields.io/badge/Standart-G%C4%B0B%20e--Defter-success.svg)](https://edefter.gov.tr)
+[![Blog](https://img.shields.io/badge/Rehber-Mali%20M%C3%BCh%C3%BCr%20Merkezi-purple.svg)](https://mali-muhur-merkezi.pages.dev/)
 
-Gelir İdaresi Başkanlığı (**GİB**) e-Defter sistemine berat yüklerken yaşanan en yaygın krizlerden biri:
-
-> **"Şema Kontrolü Başarısız Oldu (Schema Validation Error)"**  
-> **"Borç ve Alacak Tutarları Eşit Değil!"**  
-> veya  
-> **"Geçersiz XML Sözdizimi / İmza Doğrulanamadı"**
-
-hataları nedeniyle beratın reddedilmesidir. Ayın son günü berat gönderen şirketler için bu durum vergi usulsüzlük cezalarıyla sonuçlanabilir.
-
-Bu açık kaynaklı Python aracı; muhasebe programınızdan üretilen **Yevmiye Defteri**, **Defter-i Kebir** ve **Berat XML** dosyalarını GİB portalına yüklemeden önce saniyeler içinde tarar, tutar dengesini (balans) ve zorunlu alanları doğrular.
+Gelir İdaresi Başkanlığı (GİB) e-Defter standartlarına göre hazırlanan **Yevmiye Defteri, Defter-i Kebir ve Berat XML** dosyalarını GİB portalına yüklemeden önce denetleyen; Borç-Alacak dengesini (Balans), GİB isimlendirme formatını, dijital imza ve özet (hash) bütünlüğünü kontrol eden açık kaynaklı Python aracıdır.
 
 ---
 
-## 🔍 Neleri Denetler?
+## ✨ Öne Çıkan Özellikler
 
-1. **Borç / Alacak Balans Kontrolü:** Toplam borç ile toplam alacak tutarının birebir kuruşu kuruşuna eşit olup olmadığını denetler (GİB reddinin 1 numaralı sebebi).
-2. **VKN / TCKN Denetimi:** 10 haneli Vergi Kimlik No veya 11 haneli T.C. Kimlik Numarasının varlığını ve biçimini inceler.
-3. **Mali Mühür / Dijital İmza Varlığı:** Dosyada `<ds:Signature>` imza blokunun yer alıp almadığını kontrol eder.
-4. **XML Sözdizimi:** Bozuk etiketleri ve eksik kapanışları raporlar.
+* ⚡ **Sıfır Bağımlılık (Zero-Dependency):** Ek kütüphane veya Java yüklemesi gerekmez. Saf Python ile çalışır.
+* ⚖️ **Kuruş Hassasiyetinde Balans Kontrolü:** Toplam Borç ve Toplam Alacak tutarlarını karşılaştırır, GİB'in reddedeceği dengesizlikleri yüklemeden önce bildirir.
+* 📛 **GİB İsimlendirme Şablonu Denetimi:** `VKN-YYYYMM-Y-000000.xml` ve `VKN-YYYYMM-YB-000000.xml` kurallarını denetler.
+* 🔐 **Özet (Hash) Doğrulama:** `--verify-hash` parametresi ile berat içindeki `DigestValue`'nun defter dosyasıyla tam eşleştiğini doğrular.
+* 🔏 **Mali Mühür İmza Kontrolü:** Belgede `<ds:Signature>` bloğunun bulunup bulunmadığını denetler.
+* 📊 **Çoklu Rapor Formatı:** Terminal renkli çıktı, JSON, CSV ve Markdown tablo desteği.
 
 ---
 
-## 🚀 Hızlı Kullanım
+## 🚀 Hızlı Başlangıç
 
-### Komut Satırından Çalıştırma
+### 1. Tekil Dosya İnceleme
 ```bash
-python validate_edefter_xml.py 1234567890-202601-Y-000001.xml
+python validate_edefter_xml.py 1234567890-202601-YB-000000.xml
 ```
 
-**Örnek Çıktı (Başarılı):**
-```text
-================================================================================
-        GİB e-DEFTER & BERAT XML DOĞRULAMA RAPORU v1.0
-================================================================================
-Dosya Adı:       1234567890-202601-YB-000001.xml
-Dosya Türü:      e-Defter Beratı (Yevmiye/Kebir)
-VKN/TCKN:        1234567890
-İmza Durumu:     ✅ İmzalanmış (<Signature> Mevcut)
-Genel Sonuç:     ✅ GEÇERLİ - GİB YÜKLEMESİNE UYGUN
-
-Toplam Borç:     1,450,230.50 TL
-Toplam Alacak:   1,450,230.50 TL
-Borç/Alacak Fark: 0.00 TL (✅ DENGELİ (0.00 TL))
-```
-
-**Örnek Çıktı (Hatalı / Dengesiz):**
-```text
-🚨 KRİTİK HATALAR:
-  - KRİTİK HATA: Borç ve Alacak tutarları eşit değil! (Fark: 150.00 TL). GİB bu beratı kesinlikle reddedecektir!
-```
-
-### JSON Formatında Çıktı Alma (Yazılım Entegrasyonları İçin)
+### 2. Berat ile Defterin Özet (Hash) Doğrulaması
 ```bash
-python validate_edefter_xml.py berat.xml --json
+python validate_edefter_xml.py berat.xml --verify-hash yevmiye_defteri.xml
 ```
 
-### Toplu XML Taraması (Klasör Modu)
-Bir klasördeki tüm Yevmiye, Kebir ve Berat dosyalarını tek seferde taramak için:
+### 3. Klasördeki Tüm Dosyaları Toplu Tarama ve CSV Alma
 ```bash
-# Klasördeki tüm XML dosyalarını denetle
-python validate_edefter_xml.py --dir ./edefter_arsiv/
-
-# Raporu JSON dosyasına kaydet
-python validate_edefter_xml.py --dir ./edefter_arsiv/ --output berat_raporu.json
-
-# Hatalı/dengesiz berat varsa CI/CD veya script'te hata kodu (exit 1) üret
-python validate_edefter_xml.py berat.xml --strict
+python validate_edefter_xml.py --dir ./2026_01_beratlar/ --csv rapor.csv
 ```
 
+---
+
+## 🐍 Python Projelerinde Kullanım
+
+```python
+from validate_edefter_xml import validate_edefter_file
+
+sonuc = validate_edefter_file("berat.xml")
+
+if sonuc["valid"]:
+    print(f"✅ GİB Yüklemesine Uygun! VKN: {sonuc['meta']['vkn_tckn']}")
+    print(f"Borç/Alacak Farkı: {sonuc['meta']['fark']} TL")
+else:
+    print("❌ Hatalar bulundu:")
+    for err in sonuc["errors"]:
+        print(f" - {err}")
+```
+
+---
+
+## 🔗 E-Dönüşüm Açık Kaynak Ekosistemi
+
+Bu araç [eimza-kep](https://github.com/eimza-kep) organizasyonunun açık kaynak e-dönüşüm araçları ekosisteminin bir parçasıdır:
+
+* 🇹🇷 **[awesome-turkiye-e-donusum](https://github.com/eimza-kep/awesome-turkiye-e-donusum):** Türkiye E-Dönüşüm kütüphane, mevzuat ve araçlar listesi.
+* ⏱️ **[mali-muhur-eimza-suresi-kontrol](https://github.com/eimza-kep/mali-muhur-eimza-suresi-kontrol):** e-Defter imzalamada kritik Mali Mühür sertifika süresi denetleyici.
+* 🧾 **[e-fatura-xml-goruntuleyici](https://github.com/eimza-kep/e-fatura-xml-goruntuleyici):** GİB UBL-TR e-Fatura, e-Arşiv ve e-İrsaliye görüntüleyici.
+* 🔧 **[gib-java-guvenlik-cozucu](https://github.com/eimza-kep/gib-java-guvenlik-cozucu):** GİB portalları için Java güvenlik ve istisna yapılandırıcı.
+
+---
+
+## 📚 İlgili Teknik Rehberler
+* 📄 [e-Defter Berat Yükleme Günü Mali Mühür Çalışmazsa Acil Eylem Planı](https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html)
+* 📄 [e-Defterde İkincil Kopya Saklama Zorunluluğu ve GİB Zaman Damgası](https://edonusum-kobi.pages.dev/yazilar/e-defter-ikincil-kopya-saklama-zorunlulugu.html)
+* 📄 [Mali Mühür Bloke Olduğunda PUK Kodu ile Kilit Nasıl Açılır?](https://mali-muhur-merkezi.pages.dev/yazilar/mali-muhur-pin-bloke-puk-kodu-cozum.html)
 
 ---
 
 ## ⚖️ Lisans
 
 Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır.
-
-
-### 📚 İlgili Rehber ve Çözümler
-* 📄 [e-Defter Berat Yükleme Gününde Mali Mühür Çalışmazsa Ne Yapılır?](https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html)
-* 📄 [Mali Mühür ile Bireysel E-İmza Arasındaki 3 Temel Fark](https://mali-muhur-merkezi.pages.dev/yazilar/mali-muhur-ve-e-imza-arasindaki-farklar.html)
-* 📄 [e-Fatura ile e-Arşiv Fatura Arasındaki Fark Nedir?](https://efatura-atolyesi.pages.dev/yazilar/e-fatura-ve-e-arsiv-arasindaki-farklar.html)

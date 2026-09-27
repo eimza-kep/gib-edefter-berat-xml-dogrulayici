@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GİB e-Defter ve Berat XML Sözdizimi & Balans Doğrulama Aracı
-===========================================================
+GİB e-Defter ve Berat XML Sözdizimi, Dosya Adı & Balans Doğrulama Aracı v1.2
+===========================================================================
 Gelir İdaresi Başkanlığı (GİB) e-Defter standartlarına göre hazırlanan
 Yevmiye, Defter-i Kebir ve Berat XML dosyalarını yükleme öncesinde denetler:
-Zorunlu alanları, VKN/TCKN, dönem formatını ve en önemlisi Borç-Alacak
-tutar eşitliğini (Balans kontrolü) inceler.
+Zorunlu alanları, VKN/TCKN, dönem formatını, GİB dosya adlandırma standartlarını,
+özet (hash) eşleşmesini ve Borç-Alacak tutar eşitliğini (Balans) inceler.
 
-Yazar: E-İmza & Dijital Dönüşüm Portalı (https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html)
+Özellikler:
+- Sıfır bağımlılık (Pure Python Standard Library)
+- GİB standart dosya adı kontrolü (VKN-YYYYMM-Y/K/YB/KB formatı)
+- Berat içi DigestValue ile defter dosyasının SHA özetini doğrulama (--verify-hash)
+- Borç - Alacak kuruş farkı hassasiyetinde balans kontrolü
+- CSV, JSON ve Markdown formatında denetim raporu
+- Toplu klasör tarama (--dir) ve CI denetimi (--strict)
+
+Yazar: E-İmza & Dijital Dönüşüm Portalı (https://mali-muhur-merkezi.pages.dev/)
 Lisans: MIT
 """
 
 import sys
 import os
 import re
+import csv
 import json
+import hashlib
 import argparse
 import xml.etree.ElementTree as ET
 
@@ -32,11 +42,36 @@ def clean_tag(tag):
         return tag.split("}", 1)[1]
     return tag
 
-def validate_edefter_file(file_path):
+def check_gib_filename_format(filename):
+    """
+    GİB e-Defter dosya adı formatını denetler:
+    Örn: 1234567890-202601-Y-000000.xml veya 1234567890-202601-YB-000000.xml
+    """
+    pattern = r"^(\d{10,11})-(\d{6})-(Y|K|YB|KB)-(\d{6})\.xml$"
+    m = re.match(pattern, filename, re.IGNORECASE)
+    if m:
+        vkn, donem, tip, no = m.groups()
+        tip_map = {
+            "Y": "Yevmiye Defteri",
+            "K": "Defter-i Kebir",
+            "YB": "Yevmiye Beratı",
+            "KB": "Kebir Beratı"
+        }
+        return True, {
+            "vkn": vkn,
+            "donem": f"{donem[:4]}/{donem[4:]}",
+            "tur": tip_map.get(tip.upper(), tip),
+            "parca_no": no
+        }
+    return False, None
+
+def validate_edefter_file(file_path, referenced_defter_path=None):
     errors = []
     warnings = []
+    fname = os.path.basename(file_path)
+    
     meta = {
-        "file_name": os.path.basename(file_path),
+        "file_name": fname,
         "file_path": os.path.abspath(file_path),
         "file_size_bytes": os.path.getsize(file_path) if os.path.exists(file_path) else 0,
         "file_type": "Bilinmiyor",
@@ -48,8 +83,18 @@ def validate_edefter_file(file_path):
         "toplam_alacak": 0.0,
         "fark": 0.0,
         "is_balanced": True,
-        "is_signed": False
+        "is_signed": False,
+        "filename_conforms_gib": False,
+        "hash_verified": None
     }
+
+    # Dosya adı GİB formatı denetimi
+    fn_valid, fn_info = check_gib_filename_format(fname)
+    meta["filename_conforms_gib"] = fn_valid
+    if not fn_valid:
+        warnings.append(f"Dosya adı '{fname}' GİB e-Defter isimlendirme şablonuna (VKN-YYYYMM-TUR-NO.xml) uymuyor.")
+    else:
+        meta["file_type"] = fn_info["tur"]
 
     try:
         tree = ET.parse(file_path)
@@ -58,7 +103,7 @@ def validate_edefter_file(file_path):
         return {
             "valid": False,
             "errors": [f"XML Sözdizim Hatası (Malformed XML): {e}"],
-            "warnings": [],
+            "warnings": warnings,
             "meta": meta
         }
 
@@ -68,8 +113,6 @@ def validate_edefter_file(file_path):
         meta["file_type"] = "e-Defter Beratı (Yevmiye/Kebir)"
     elif "defter" in root_tag or "ledger" in root_tag:
         meta["file_type"] = "e-Defter Dosyası"
-    else:
-        warnings.append(f"Kök etiket standart e-defter formatından farklı olabilir: <{clean_tag(root.tag)}>")
 
     start_date = ""
     end_date = ""
@@ -128,6 +171,27 @@ def validate_edefter_file(file_path):
             meta["is_balanced"] = False
             errors.append(f"KRİTİK HATA: Borç ve Alacak tutarları eşit değil! (Fark: {fark:,.2f} TL). GİB bu beratı kesinlikle reddedecektir!")
 
+    # İlgili defter dosyasının özet doğrulaması (--verify-hash)
+    if referenced_defter_path and os.path.exists(referenced_defter_path):
+        with open(referenced_defter_path, "rb") as df:
+            df_bytes = df.read()
+        
+        algo = meta["digest_method"].lower()
+        if "sha256" in algo:
+            calc_hash = hashlib.sha256(df_bytes).digest()
+        elif "sha1" in algo:
+            calc_hash = hashlib.sha1(df_bytes).digest()
+        else:
+            calc_hash = hashlib.sha256(df_bytes).digest()
+        
+        import base64
+        calc_b64 = base64.b64encode(calc_hash).decode("ascii")
+        if meta["digest_value"] == calc_b64:
+            meta["hash_verified"] = True
+        else:
+            meta["hash_verified"] = False
+            errors.append(f"KRİTİK HATA: Berat içindeki DigestValue ({meta['digest_value']}) ile defter dosyasının hesaplanan özeti ({calc_b64}) UYUŞMUYOR!")
+
     is_valid = len(errors) == 0
 
     return {
@@ -137,18 +201,37 @@ def validate_edefter_file(file_path):
         "meta": meta
     }
 
+def generate_markdown_report(results):
+    md = "# GİB e-Defter ve Berat XML Doğrulama Raporu\n\n"
+    md += f"Toplam **{len(results)}** adet e-Defter dosyası denetlendi.\n\n"
+    md += "| Durum | Dosya Adı | Tür | VKN/TCKN | Balans Durumu | İmza |\n"
+    md += "|:---:|---|---|---|:---:|:---:|\n"
+    for r in results:
+        m = r["meta"]
+        st = "✅ Geçerli" if r["valid"] else "❌ Hatalı"
+        balans = "Dengeli (0.00 TL)" if m["is_balanced"] else f"Fark: {m['fark']:,.2f} TL"
+        sig = "İmzalı" if m["is_signed"] else "İmzasız"
+        md += f"| {st} | `{m['file_name']}` | {m['file_type']} | {m['vkn_tckn'] or '-'} | {balans} | {sig} |\n"
+    
+    md += "\n---\n"
+    md += "💡 **Mevzuat Notu:** GİB e-Defter uygulamasında Yevmiye ve Kebir beratlarının Borç-Alacak dengesi tam eşit olmak zorundadır.\n"
+    return md
+
 def print_result_cli(res):
     m = res["meta"]
     print("=" * 80)
-    print("        GİB e-DEFTER & BERAT XML DOĞRULAMA RAPORU v1.1")
+    print("     GİB e-DEFTER & BERAT XML DOĞRULAMA RAPORU v1.2")
     print("=" * 80)
     print(f"Dosya Adı:       {m['file_name']}")
     print(f"Dosya Türü:      {m['file_type']}")
+    print(f"GİB Ad Formatı:  {'✅ Standart İsimlendirme' if m['filename_conforms_gib'] else '⚠️ Standart Dışı İsim'}")
     print(f"VKN/TCKN:        {m['vkn_tckn'] or 'Tespit Edilemedi'}")
     if m["donem"]:
         print(f"Dönem:           {m['donem']}")
     if m["digest_value"]:
         print(f"Dosya Özeti:     {m['digest_method']} -> {m['digest_value']}")
+    if m["hash_verified"] is not None:
+        print(f"Defter Özeti:    {'✅ ÖZET DOĞRULANDI (Dosya Değişmemiş)' if m['hash_verified'] else '❌ ÖZET UYUŞMAZLIĞI (Dosya Bozulmuş/Değişmiş!)'}")
     print(f"İmza Durumu:     {'✅ İmzalanmış (<Signature> Mevcut)' if m['is_signed'] else '⚠️  İmzasız (Mali Mühür Bekliyor)'}")
     print(f"Genel Sonuç:     {'✅ GEÇERLİ - GİB YÜKLEMESİNE UYGUN' if res['valid'] else '❌ HATALI - GİB REDDEDER'}\n")
 
@@ -173,11 +256,14 @@ def print_result_cli(res):
     print("Mali Mühür & e-Defter Çözüm Portalı: https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html")
 
 def main():
-    parser = argparse.ArgumentParser(description="GİB e-Defter ve Berat XML Doğrulayıcı")
+    parser = argparse.ArgumentParser(description="GİB e-Defter ve Berat XML Doğrulayıcı v1.2")
     parser.add_argument("xml_path", nargs="?", default=None, help="İncelenecek e-Defter veya Berat XML dosyasının yolu")
     parser.add_argument("--dir", help="Belirtilen dizindeki tüm XML dosyalarını toplu inceleme")
+    parser.add_argument("--verify-hash", help="Beratta belirtilen özet değerini karşılaştırmak için ilgili defter XML dosyası")
     parser.add_argument("--json", action="store_true", help="Sonucu JSON formatında verir")
-    parser.add_argument("--output", help="Raporu belirtilen JSON dosyasına kaydeder")
+    parser.add_argument("--markdown", action="store_true", help="Sonucu Markdown tablosu olarak verir")
+    parser.add_argument("--csv", help="Sonuçları belirtilen CSV dosyasına kaydeder")
+    parser.add_argument("--output", help="Raporu belirtilen JSON/Markdown dosyasına kaydeder")
     parser.add_argument("--strict", action="store_true", help="Hatalı dosya varsa 1 çıkış kodu döndürür")
 
     args = parser.parse_args()
@@ -199,12 +285,32 @@ def main():
                 any_invalid = True
             batch_results.append(r)
 
-        if args.output:
+        if args.csv:
+            with open(args.csv, "w", newline="", encoding="utf-8-sig") as f:
+                writer = csv.writer(f, delimiter=";")
+                writer.writerow(["Dosya", "Gecerli", "Tur", "VKN", "Borc", "Alacak", "Fark", "Imzali", "Hatalar"])
+                for b in batch_results:
+                    m = b["meta"]
+                    writer.writerow([m["file_name"], "EVET" if b["valid"] else "HAYIR", m["file_type"], m["vkn_tckn"], m["toplam_borc"], m["toplam_alacak"], m["fark"], "EVET" if m["is_signed"] else "HAYIR", " | ".join(b["errors"])])
+            print(f"[OK] CSV raporu kaydedildi: {args.csv}")
+            return
+        elif args.markdown:
+            md_text = generate_markdown_report(batch_results)
+            if args.output:
+                with open(args.output, "w", encoding="utf-8") as f:
+                    f.write(md_text)
+                print(f"[OK] Markdown raporu kaydedildi: {args.output}")
+            else:
+                print(md_text)
+            return
+        elif args.output:
             with open(args.output, "w", encoding="utf-8") as f:
                 json.dump(batch_results, f, ensure_ascii=False, indent=2)
             print(f"[OK] Toplu rapor dosyaya aktarıldı: {args.output}")
+            return
         elif args.json:
             print(json.dumps(batch_results, ensure_ascii=False, indent=2))
+            return
         else:
             print(f"Toplam {len(batch_results)} adet e-Defter XML dosyası tarandı:")
             for r in batch_results:
@@ -221,9 +327,17 @@ def main():
         print(f"Hata: Dosya bulunamadı -> {args.xml_path}", file=sys.stderr)
         sys.exit(1)
 
-    res = validate_edefter_file(args.xml_path)
+    res = validate_edefter_file(args.xml_path, referenced_defter_path=args.verify_hash)
 
-    if args.output:
+    if args.markdown:
+        md_text = generate_markdown_report([res])
+        if args.output:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(md_text)
+            print(f"[OK] Markdown raporu kaydedildi: {args.output}")
+        else:
+            print(md_text)
+    elif args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(res, f, ensure_ascii=False, indent=2)
         print(f"[OK] Rapor dosyaya aktarıldı: {args.output}")
@@ -237,4 +351,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
