@@ -4,7 +4,7 @@
 [![Lisans: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
 [![Standart: GİB e-Defter](https://img.shields.io/badge/Standart-G%C4%B0B%20e--Defter-success.svg)](https://edefter.gov.tr)
-[![Blog](https://img.shields.io/badge/Rehber-Mali%20M%C3%BCh%C3%BCr%20Merkezi-purple.svg)](https://mali-muhur-merkezi.pages.dev/)
+[![Blog](https://img.shields.io/badge/Rehber-Mali%20M%C3%BCh%C3%BCr%20Merkezi-purple.svg)](https://malimuhur.site/)
 
 Gelir İdaresi Başkanlığı (GİB) e-Defter standartlarına göre hazırlanan **Yevmiye Defteri, Defter-i Kebir ve Berat XML** dosyalarını GİB portalına yüklemeden önce denetleyen; Borç-Alacak dengesini (Balans), GİB isimlendirme formatını, dijital imza ve özet (hash) bütünlüğünü kontrol eden açık kaynaklı Python aracıdır.
 
@@ -70,9 +70,9 @@ Bu araç [eimza-kep](https://github.com/eimza-kep) organizasyonunun açık kayna
 ---
 
 ## 📚 İlgili Teknik Rehberler
-* 📄 [e-Defter Berat Yükleme Günü Mali Mühür Çalışmazsa Acil Eylem Planı](https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html)
-* 📄 [e-Defterde İkincil Kopya Saklama Zorunluluğu ve GİB Zaman Damgası](https://edonusum-kobi.pages.dev/yazilar/e-defter-ikincil-kopya-saklama-zorunlulugu.html)
-* 📄 [Mali Mühür Bloke Olduğunda PUK Kodu ile Kilit Nasıl Açılır?](https://mali-muhur-merkezi.pages.dev/yazilar/mali-muhur-pin-bloke-puk-kodu-cozum.html)
+* 📄 [e-Defter Berat Yükleme Günü Mali Mühür Çalışmazsa Acil Eylem Planı](https://malimuhur.site/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html)
+* 📄 [e-Defterde İkincil Kopya Saklama Zorunluluğu ve GİB Zaman Damgası](https://edonusumkobi.site/yazilar/e-defter-ikincil-kopya-saklama-zorunlulugu.html)
+* 📄 [Mali Mühür Bloke Olduğunda PUK Kodu ile Kilit Nasıl Açılır?](https://malimuhur.site/yazilar/mali-muhur-pin-bloke-puk-kodu-cozum.html)
 
 ---
 

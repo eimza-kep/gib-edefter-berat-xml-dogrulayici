@@ -16,7 +16,7 @@ Zorunlu alanları, VKN/TCKN, dönem formatını, GİB dosya adlandırma standart
 - CSV, JSON ve Markdown formatında denetim raporu
 - Toplu klasör tarama (--dir) ve CI denetimi (--strict)
 
-Yazar: E-İmza & Dijital Dönüşüm Portalı (https://mali-muhur-merkezi.pages.dev/)
+Yazar: E-İmza & Dijital Dönüşüm Portalı (https://malimuhur.site/)
 Lisans: MIT
 """
 
@@ -253,7 +253,7 @@ def print_result_cli(res):
         print()
 
     print("=" * 80)
-    print("Mali Mühür & e-Defter Çözüm Portalı: https://mali-muhur-merkezi.pages.dev/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html")
+    print("Mali Mühür & e-Defter Çözüm Portalı: https://malimuhur.site/yazilar/e-defter-berat-gunu-mali-muhur-calismazsa-cozum.html")
 
 def main():
     parser = argparse.ArgumentParser(description="GİB e-Defter ve Berat XML Doğrulayıcı v1.2")
